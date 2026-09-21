@@ -53,7 +53,12 @@ class Poisson2D:
         A : scipy sparse LIL matrix
             The vectorized Laplace operator
         """
-        raise NotImplementedError("The laplace method is not implemented yet.")
+        step = self.p.L / N
+
+        D2x = self.p.D2(N, step)
+        D2y = self.p.D2(N, step)
+        return (sparse.kron(D2x, sparse.eye(N + 1)) +
+                sparse.kron(sparse.eye(N + 1), D2y))
 
     def assemble(
         self, N: int, f: sp.Expr, ue: sp.Expr
