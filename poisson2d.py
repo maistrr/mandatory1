@@ -89,7 +89,26 @@ class Poisson2D:
         Dirichlet boundary conditions using the exact solution ue.
 
         """
-        raise NotImplementedError("The assemble method is not implemented yet.")
+        # Convert sympy functions to mesh functions
+        xij, yij = self.create_mesh(N)
+        UE = self.meshfunction(ue, xij, yij)
+        F = self.meshfunction(f, xij, yij)
+
+        # Build the coefficient matrix A
+        A = self.laplace(N)
+        A = A.tolil()
+        bnds = self.get_boundary_indices(N)
+
+        for i in bnds:
+            A[i] = 0
+            A[i, i] = 1
+        A = A.tocsr()
+        
+        b = F.ravel()
+        b[bnds] = UE.ravel()[bnds]
+        
+        return A, b
+
 
     def meshfunction(self, u: sp.Expr, xij: np.ndarray, yij: np.ndarray) -> np.ndarray:
         """Return Sympy function as mesh function
@@ -102,13 +121,14 @@ class Poisson2D:
         -------
         array - The input function as a mesh function
         """
-        raise NotImplementedError("The meshfunction method is not implemented yet.")
+        shape = np.broadcast_shapes(xij.shape, yij.shape)
+        return np.broadcast_to(sp.lambdify((x, y), u, "numpy")(xij, yij), shape)
 
     def get_boundary_indices(self, N: int) -> np.ndarray:
         """Return indices of vectorized matrix that belongs to the boundary"""
-        raise NotImplementedError(
-            "The get_boundary_indices method is not implemented yet."
-        )
+        B = np.ones((N + 1, N + 1), dtype=bool)
+        B[1:-1, 1:-1] = False   # Clears everything but the outer frame
+        return np.where(B.ravel())[0]
 
     def l2_error(self, u: np.ndarray, ue: sp.Expr) -> float:
         """Return l2-error
