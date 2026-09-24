@@ -40,6 +40,7 @@ class Poisson2D:
         xij, yij = np.meshgrid(xi, xi, indexing="ij", sparse=True)
         return xij, yij
 
+
     def laplace(self, N: int) -> sparse.lil_matrix:
         """Return a vectorized Laplace operator
 
@@ -53,12 +54,13 @@ class Poisson2D:
         A : scipy sparse LIL matrix
             The vectorized Laplace operator
         """
-        step = self.p.L / N
+        h = self.p.L / N
 
-        D2x = self.p.D2(N, step)
-        D2y = self.p.D2(N, step)
+        D2x = self.p.D2(N, h)
+        D2y = self.p.D2(N, h)
         return (sparse.kron(D2x, sparse.eye(N + 1)) +
                 sparse.kron(sparse.eye(N + 1), D2y))
+
 
     def assemble(
         self, N: int, f: sp.Expr, ue: sp.Expr
@@ -123,11 +125,13 @@ class Poisson2D:
         """
         return sp.lambdify((x, y), u)(xij, yij)
 
+
     def get_boundary_indices(self, N: int) -> np.ndarray:
         """Return indices of vectorized matrix that belongs to the boundary"""
         B = np.ones((N + 1, N + 1), dtype=bool)
         B[1:-1, 1:-1] = False   # Clears everything but the outer frame
         return np.where(B.ravel())[0]
+
 
     def l2_error(self, u: np.ndarray, ue: sp.Expr) -> float:
         """Return l2-error
@@ -144,7 +148,15 @@ class Poisson2D:
         float - The l2-error
 
         """
-        raise NotImplementedError("The l2_error method is not implemented yet.")
+        N = u.shape[0] - 1
+        h = self.p.L / N
+
+        # Convert ue from Sympy expression to mesh
+        xij, yij = self.create_mesh(N)
+        UE = self.meshfunction(ue, xij, yij)
+
+        return np.sqrt(h**2 * np.sum((u - UE)**2))
+
 
     def __call__(self, N: int, ue: sp.Expr) -> np.ndarray:
         """Solve Poisson's equation with a given manufactured solution
@@ -163,6 +175,7 @@ class Poisson2D:
         """
         A, b = self.assemble(N, sp.diff(ue, x, 2) + sp.diff(ue, y, 2), ue)
         return sparse_linalg.spsolve(A, b.ravel()).reshape((N + 1, N + 1))
+
 
     def convergence_rates(self, ue: sp.Expr, m: int = 6):
         E = []
@@ -212,5 +225,6 @@ def test_interpolation():
 
 if __name__ == "__main__":
     test_convergence_poisson2d()
+    print("test_convergence_poisson2d passed!")
     test_interpolation()
     print("All tests passed!")
