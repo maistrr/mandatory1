@@ -103,7 +103,7 @@ class Poisson2D:
             A[i] = 0
             A[i, i] = 1
         A = A.tocsr()
-        
+
         b = F.ravel()
         b[bnds] = UE.ravel()[bnds]
         
@@ -121,8 +121,7 @@ class Poisson2D:
         -------
         array - The input function as a mesh function
         """
-        shape = np.broadcast_shapes(xij.shape, yij.shape)
-        return np.broadcast_to(sp.lambdify((x, y), u, "numpy")(xij, yij), shape)
+        return sp.lambdify((x, y), u)(xij, yij)
 
     def get_boundary_indices(self, N: int) -> np.ndarray:
         """Return indices of vectorized matrix that belongs to the boundary"""
