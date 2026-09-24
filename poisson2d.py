@@ -202,7 +202,21 @@ class Poisson2D:
         The value of u(x, y)
 
         """
-        raise NotImplementedError("The eval method is not implemented yet.")
+        N = U.shape[0] - 1
+        h = self.p.L / N
+
+        # Find which cell x and y fall into by truncating, within bounds
+        i = min(int(x / h), N-1)
+        j = min(int(y / h), N-1)
+
+        # Fractional position of (x, y) inside its cell
+        xx = (x - i * h) / h
+        yy = (y - j * h) / h
+
+        return ((1 - xx) * (1 - yy) * U[i, j] +
+                xx * (1 - yy) * U[i+1, j] +
+                (1 - xx) * yy * U[i, j+1] +
+                xx * yy * U[i+1, j+1])
 
 
 def test_convergence_poisson2d():
@@ -225,6 +239,5 @@ def test_interpolation():
 
 if __name__ == "__main__":
     test_convergence_poisson2d()
-    print("test_convergence_poisson2d passed!")
     test_interpolation()
     print("All tests passed!")
