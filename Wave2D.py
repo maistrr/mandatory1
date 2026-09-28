@@ -52,7 +52,9 @@ class Wave2D:
     @property
     def w(self):
         """Return the dispersion coefficient"""
-        return np.sqrt(self.c**2 * (self.mx**2 + self.my**2))
+        kx = self.mx * np.pi
+        ky = self.my * np.pi
+        return np.sqrt(self.c**2 * (kx**2 + ky**2))
 
 
     def ue(self, mx: int, my: int) -> sp.Expr:
@@ -87,7 +89,7 @@ class Wave2D:
         self.D = D
 
         Unm1 = sp.lambdify((x, y), self.ue(mx, my).subs(t, 0), "numpy")(xij, yij)
-        Un = Unm1 * 0.5*(self.c * self.dt)**2 * (D @ Unm1 + Unm1 @ D.T)
+        Un = Unm1 + 0.5*(self.c * self.dt)**2 * (D @ Unm1 + Unm1 @ D.T)
         return Unm1, Un
 
 
@@ -123,7 +125,6 @@ class Wave2D:
         u[-1] = 0
         u[:, 0] = 0
         u[:, -1] = 0
-        raise NotImplementedError("The apply_bcs method is not implemented yet.")
 
 
     def __call__(
@@ -167,7 +168,26 @@ class Wave2D:
         self.my = my
         self.h = 1.0 / N
 
-        raise NotImplementedError("The __call__ method is not implemented yet.")
+        Unm1, Un = self.initialize(N, mx, my)
+        D = self.D
+
+        errors = [self.l2_error(Unm1, 0), self.l2_error(Un, self.dt)]
+        data = {0: Unm1.copy()}
+        if store_data > 0:
+            data[1] = Un.copy()
+
+        for n in range(1, Nt):
+            Unp1 = 2*Un - Unm1 + (self.c * self.dt)**2 * (D @ Un + Un @ D.T)
+            self.apply_bcs(Unp1)
+            Unm1, Un = Un, Unp1
+            tn = (n + 1) * self.dt
+            errors.append(self.l2_error(Un, tn))
+            if store_data > 0 and (n + 1) % store_data == 0:
+                data[n + 1] = Un.copy()
+
+        if store_data == -1:
+            return self.h, np.array(errors)
+        return data
 
 
     def convergence_rates(
