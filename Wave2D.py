@@ -302,4 +302,4 @@ if __name__ == "__main__":
     
     ani = animation.ArtistAnimation(fig, frames, interval=400, blit=True,
                                     repeat_delay=1000)
-    ani.save('neumannwave.gif', writer='pillow', fps=5)
+    ani.save('neumannwave.gif', writer='pillow', fps=5, dpi=80)
