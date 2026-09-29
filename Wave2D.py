@@ -1,6 +1,9 @@
 import numpy as np
 import sympy as sp
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
 from scipy import sparse
+
 
 x, y, t = sp.symbols("x,y,t")
 
@@ -279,3 +282,24 @@ if __name__ == "__main__":
     test_convergence_wave2d_neumann()
     test_exact_wave2d()
     print('All tests passed!')
+
+    # ==========================================================================
+
+    # Animation
+    N = 40
+    cfl = 1 / np.sqrt(2)
+    Nt = 171
+
+    solver = Wave2D_Neumann()
+    xij, yij = solver.create_mesh(40)
+    data = solver(N, Nt, cfl=cfl, store_data=5, mx=2, my=2)
+
+    fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
+    frames = []
+    for n, val in data.items():
+        frame = ax.plot_wireframe(xij, yij, val, rstride=2, cstride=2);
+        frames.append([frame])
+    
+    ani = animation.ArtistAnimation(fig, frames, interval=400, blit=True,
+                                    repeat_delay=1000)
+    ani.save('neumannwave.gif', writer='pillow', fps=5)
