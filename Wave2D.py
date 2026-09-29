@@ -169,6 +169,7 @@ class Wave2D:
         self.h = 1.0 / N
 
         Unm1, Un = self.initialize(N, mx, my)
+        self.apply_bcs(Un)
         D = self.D
 
         errors = [self.l2_error(Unm1, 0), self.l2_error(Un, self.dt)]
@@ -264,15 +265,17 @@ def test_convergence_wave2d_neumann():
 
 
 def test_exact_wave2d():
-    raise NotImplementedError("The test_exact_wave2d function is not implemented yet.")
+    cfl = 1 / np.sqrt(2)
+    mxy = 3
+
+    solvers = {"D": Wave2D(), "N": Wave2D_Neumann()}
+    for key, sol in solvers.items():
+        _, err, _ = sol.convergence_rates(mx=mxy, my=mxy, cfl=cfl)
+        assert abs(err[-1]) < 1e-12, (key, err[-1])
 
 
 if __name__ == "__main__":
     test_convergence_wave2d()
-    print('test_convergence_wave2d passed!')
-
     test_convergence_wave2d_neumann()
-    print('test_convergence_wave2d_neumann passed!')
-
-    # test_exact_wave2d()
-    # print('All tests passed!')
+    test_exact_wave2d()
+    print('All tests passed!')
